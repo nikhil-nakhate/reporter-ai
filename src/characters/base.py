@@ -78,3 +78,4 @@ class CharacterBase(ABC):
         
         return all_valid
 
+

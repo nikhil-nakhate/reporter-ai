@@ -1,0 +1,31 @@
+# Reporter AI Web App Dependencies
+
+# Web framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# HTTP client for article fetching
+aiohttp>=3.9.0
+
+# HTML parsing
+beautifulsoup4>=4.12.0
+
+# LLM API
+anthropic>=0.18.0
+openai>=1.0.0
+
+# Qwen VLM (optional - for local model support)
+# Uncomment if using Qwen VLM
+# torch>=2.0.0
+# transformers>=4.35.0
+# qwen-vl-utils>=0.1.0
+# bitsandbytes>=0.41.0
+# accelerate>=0.24.0
+# pillow>=9.0.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# YAML parsing (for character configs)
+pyyaml>=6.0
+
