@@ -1,3 +1,6 @@
 [submodule "src/third_party/echomimic_v3"]
 	path = src/third_party/echomimic_v3
 	url = git@github.com:antgroup/echomimic_v3.git
+[submodule "src/third_party/llm-finetuning-resources"]
+	path = src/third_party/llm-finetuning-resources
+	url = git@github.com:vossenwout/llm-finetuning-resources.git
