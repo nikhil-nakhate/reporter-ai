@@ -226,4 +226,3 @@ class TTSService:
         
         logger.error(f"No voice sample found for character: {character_id}")
         return None
-
