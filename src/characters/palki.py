@@ -1,7 +1,10 @@
 from typing import List, Optional, Dict, Any
 import yaml
+import logging
 from pathlib import Path
 from .base import CharacterBase
+
+logger = logging.getLogger(__name__)
 
 
 class Palki(CharacterBase):
@@ -51,6 +54,10 @@ class Palki(CharacterBase):
         self.yaml_path = yaml_path
         self.config: Dict[str, Any] = {}
         self._load_config()
+        
+        # Auto-load voice samples if not provided
+        if not self.voice_samples:
+            self._load_voice_samples()
     
     def _load_config(self):
         """Load configuration from YAML file."""
@@ -89,6 +96,18 @@ class Palki(CharacterBase):
             return persona
         else:
             return ""
+    
+    def _load_voice_samples(self):
+        """Auto-load voice samples from the character's voice directory."""
+        current_dir = Path(__file__).parent
+        voice_dir = current_dir / "palki" / "voice"
+        
+        if voice_dir.exists():
+            # Look for voice sample files
+            voice_files = list(voice_dir.glob("*.wav")) + list(voice_dir.glob("*.mp3"))
+            if voice_files:
+                self.voice_samples = [str(f) for f in voice_files]
+                logger.info(f"Auto-loaded {len(self.voice_samples)} voice samples for Palki")
     
     def __repr__(self) -> str:
         """String representation of the Palki Sharma character."""

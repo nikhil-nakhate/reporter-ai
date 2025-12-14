@@ -1,0 +1,16 @@
+# Cursor Rules for reporter-ai Repository
+
+## Environment
+- **ALWAYS** use the `reporter` conda environment for all Python operations
+- When running Python commands, use: `conda run -n reporter python <command>`
+- When in an interactive shell, ensure: `conda activate reporter`
+
+## Running Scripts
+- Voice generation: `conda run -n reporter python src/third_party/voice/generate_celebrity_voices.py`
+- Web app: `conda run -n reporter python src/app/main.py`
+- Or activate first: `conda activate reporter` then run scripts normally
+
+## Testing Commands
+- Always prefix Python commands with `conda run -n reporter` unless the shell already has the environment activated
+- Check environment: `conda run -n reporter python --version`
+

@@ -1,0 +1,19 @@
+requests
+beautifulsoup4
+pydub
+datasets>=2.16.1
+torch
+torchcodec  # Required by datasets for audio processing
+TTS
+numpy
+soundfile
+
+# System Dependencies (install separately):
+# - FFmpeg (required by torchcodec and pydub for audio processing)
+#   macOS: brew install ffmpeg
+#   Linux: apt-get install ffmpeg or yum install ffmpeg
+#   Windows: Download from https://ffmpeg.org/download.html
+#
+# Note: PyTorch version compatibility with torchcodec:
+# Check https://github.com/pytorch/torchcodec for compatible versions
+

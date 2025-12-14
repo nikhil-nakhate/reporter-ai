@@ -9,7 +9,11 @@ from typing import List, Dict
 # Add parent directories to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from characters import CharacterBase, PaulGraham, Palki
+from characters import (
+    CharacterBase, PaulGraham, Palki, TonyStark, YannLeCun,
+    DonaldTrump, BarackObama, ElonMusk, JoeBiden, BillGates,
+    OprahWinfrey, MarkZuckerberg
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +30,19 @@ class CharacterService:
         """Load all available characters."""
         # Register available characters
         characters_to_register = [
+            # Custom characters
             ("palki", Palki),
             ("paul_graham", PaulGraham),
+            ("tony_stark", TonyStark),
+            ("yann", YannLeCun),
+            # Celebrities from sdialog/voices-celebrities dataset
+            ("donald_trump", DonaldTrump),
+            ("barack_obama", BarackObama),
+            ("elon_musk", ElonMusk),
+            ("joe_biden", JoeBiden),
+            ("bill_gates", BillGates),
+            ("oprah_winfrey", OprahWinfrey),
+            ("mark_zuckerberg", MarkZuckerberg),
         ]
         
         for name, character_class in characters_to_register:

@@ -64,3 +64,9 @@ DEFAULT_LLM_MODEL = "claude-3-5-sonnet"
 QWEN_STREAM_CHUNK_SIZE = 10
 QWEN_STREAM_DELAY = 0.01  # seconds
 
+# TTS Model Configuration
+# Available models:
+# - "tts_models/multilingual/multi-dataset/xtts_v2" (default, recommended)
+# - "voice_conversion_models/multilingual/multi-dataset/openvoice_v2"
+DEFAULT_TTS_MODEL = "tts_models/multilingual/multi-dataset/xtts_v2"
+
