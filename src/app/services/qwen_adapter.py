@@ -33,7 +33,8 @@ try:
     from app.services.qwen_vlm import QwenVLM
     QWEN_AVAILABLE = True
     logger.info("✅ QwenVLM imported successfully from local implementation")
-except ImportError as e:
+except (ImportError, SystemError) as e:
+    # SystemError can occur when TensorFlow fails to initialize (e.g., numpy version mismatch)
     import_error = e
     logger.warning(f"QwenVLM not available: {e}")
     

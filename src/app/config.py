@@ -67,6 +67,10 @@ QWEN_STREAM_DELAY = 0.01  # seconds
 # TTS Model Configuration
 # Available models:
 # - "tts_models/multilingual/multi-dataset/xtts_v2" (default, recommended)
-# - "voice_conversion_models/multilingual/multi-dataset/openvoice_v2"
-DEFAULT_TTS_MODEL = "tts_models/multilingual/multi-dataset/xtts_v2"
+# - "tts_models/multilingual/multi-dataset/xtts_v1.1" (alternative, may have better transformers compatibility)
+# - "tts_models/multilingual/multi-dataset/your_tts" (alternative)
+# - "voice_conversion_models/multilingual/vctk/freevc24" (voice conversion model)
+# Note: openvoice_v2 is NOT available in TTS library - it's a separate standalone library from myshell-ai
+# If you want standalone OpenVoice, you need to install it separately (see OPENVOICE_OPTIONS.md)
+DEFAULT_TTS_MODEL = "tts_models/multilingual/multi-dataset/your_tts"  # Works with transformers>=4.46.2!
 

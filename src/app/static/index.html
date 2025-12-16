@@ -179,6 +179,12 @@
             bulletinOutput.innerHTML = '';
             document.getElementById('audioPlayerContainer').style.display = 'none';
             document.getElementById('audioPlayer').src = '';
+            
+            // Reset video preview
+            const videoPreview = document.getElementById('videoPreview');
+            videoPreview.innerHTML = 'Video Preview';
+            videoPreview.classList.remove('has-video');
+            
             showStatus('Fetching article and generating bulletin...', 'info');
             
             // Close any existing event source
@@ -235,13 +241,42 @@
                                     bulletinOutput.textContent += parsed.content;
                                     // Scroll to bottom
                                     bulletinOutput.scrollTop = bulletinOutput.scrollHeight;
+                                } else if (parsed.type === 'audio_start') {
+                                    // Audio generation started
+                                    const audioContainer = document.getElementById('audioPlayerContainer');
+                                    audioContainer.style.display = 'block';
+                                    audioContainer.innerHTML = `
+                                        <h3>🎙️ Audio Bulletin</h3>
+                                        <div class="progress-container">
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" id="audioProgress" style="width: 0%"></div>
+                                            </div>
+                                            <div class="progress-text" id="audioProgressText">Generating audio chunks... 0/${parsed.total_chunks}</div>
+                                        </div>
+                                    `;
+                                    showStatus('Generating audio...', 'info');
+                                } else if (parsed.type === 'audio_progress') {
+                                    // Audio chunk generation progress
+                                    const progress = (parsed.current / parsed.total) * 100;
+                                    const progressFill = document.getElementById('audioProgress');
+                                    const progressText = document.getElementById('audioProgressText');
+                                    if (progressFill) {
+                                        progressFill.style.width = progress + '%';
+                                    }
+                                    if (progressText) {
+                                        progressText.textContent = `Generating audio chunks... ${parsed.current}/${parsed.total}`;
+                                    }
                                 } else if (parsed.type === 'audio') {
                                     // Audio is ready, show player and load audio
-                                    const audioPlayer = document.getElementById('audioPlayer');
                                     const audioContainer = document.getElementById('audioPlayerContainer');
-                                    
+                                    audioContainer.innerHTML = `
+                                        <h3>🎙️ Audio Bulletin</h3>
+                                        <audio id="audioPlayer" controls style="width: 100%; margin-top: 10px;">
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    `;
+                                    const audioPlayer = document.getElementById('audioPlayer');
                                     audioPlayer.src = parsed.url;
-                                    audioContainer.style.display = 'block';
                                     
                                     // Scroll audio player into view
                                     audioContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -250,6 +285,55 @@
                                     
                                     // Auto-play audio (optional - you may want to remove this)
                                     // audioPlayer.play().catch(e => console.log('Auto-play prevented:', e));
+                                } else if (parsed.type === 'video_start') {
+                                    // Video generation started
+                                    const videoPreview = document.getElementById('videoPreview');
+                                    videoPreview.innerHTML = `
+                                        <div class="video-progress-container">
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" id="videoProgress" style="width: 0%"></div>
+                                            </div>
+                                            <div class="progress-text" id="videoProgressText">Starting video generation...</div>
+                                        </div>
+                                    `;
+                                    videoPreview.style.display = 'flex';
+                                    showStatus('Generating video preview...', 'info');
+                                } else if (parsed.type === 'video_progress') {
+                                    // Video generation progress
+                                    const progressFill = document.getElementById('videoProgress');
+                                    const progressText = document.getElementById('videoProgressText');
+                                    if (progressFill) {
+                                        progressFill.style.width = parsed.progress + '%';
+                                    }
+                                    if (progressText) {
+                                        progressText.textContent = parsed.stage || `Generating video... ${parsed.progress}%`;
+                                    }
+                                } else if (parsed.type === 'video_error') {
+                                    // Video generation error
+                                    const videoPreview = document.getElementById('videoPreview');
+                                    videoPreview.innerHTML = `<div style="color: var(--error-text);">Video generation failed: ${parsed.message}</div>`;
+                                    showStatus('Video generation failed', 'error');
+                                } else if (parsed.type === 'video') {
+                                    // Video is ready, show video preview
+                                    const videoPreview = document.getElementById('videoPreview');
+                                    
+                                    // Create video element if it doesn't exist
+                                    let videoElement = videoPreview.querySelector('video');
+                                    if (!videoElement) {
+                                        videoElement = document.createElement('video');
+                                        videoElement.controls = true;
+                                        videoElement.style.width = '100%';
+                                        videoElement.style.height = '100%';
+                                        videoElement.style.objectFit = 'contain';
+                                        videoPreview.innerHTML = '';
+                                        videoPreview.appendChild(videoElement);
+                                        videoPreview.classList.add('has-video');
+                                    }
+                                    
+                                    videoElement.src = parsed.url;
+                                    videoPreview.style.display = 'flex';
+                                    
+                                    showStatus('Video preview generated successfully!', 'success');
                                 } else if (parsed.type === 'done') {
                                     showStatus('Bulletin generated successfully', 'success');
                                 } else if (parsed.type === 'error') {

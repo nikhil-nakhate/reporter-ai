@@ -6,6 +6,18 @@ import os
 import sys
 from pathlib import Path
 from typing import Optional, List
+
+# Apply compatibility patch for newer transformers versions
+# This must be imported BEFORE TTS to fix BeamSearchScorer import issue
+try:
+    from app.services import tts_compat
+except ImportError:
+    # If running as standalone, try relative import
+    try:
+        from . import tts_compat
+    except ImportError:
+        pass  # Compatibility patch not critical if import fails
+
 import torch
 from TTS.api import TTS
 from pydub import AudioSegment
@@ -33,7 +45,8 @@ class TTSService:
         """
         self.model_path = model_path or DEFAULT_TTS_MODEL
         self.model: Optional[TTS] = None
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Force CPU-only to save GPU memory for video service
+        self.device = "cpu"
         self._initialize_model()
     
     def _initialize_model(self):
@@ -45,10 +58,22 @@ class TTSService:
         except Exception as e:
             logger.error(f"Failed to initialize TTS model: {e}")
             logger.warning("TTS service will not be available. Audio generation will be disabled.")
-            logger.warning("Common fixes:")
-            logger.warning("  - PyTorch version: pip install torch==2.5.1 torchaudio==2.5.1 torchvision==0.20.1")
-            logger.warning("  - Transformers: pip install transformers==4.35.0")
-            logger.warning("  - HuggingFace Hub: pip install 'huggingface_hub>=0.20.0,<1.0'")
+            
+            # Check for specific error types and provide targeted fixes
+            error_str = str(e).lower()
+            if "beamsearchscorer" in error_str or "cannot import name" in error_str:
+                logger.warning("Transformers version compatibility issue detected.")
+                logger.warning("TTS 0.22.0 requires transformers <4.40.0, but echomimic_v3 requires >=4.46.2")
+                logger.warning("Solutions:")
+                logger.warning("  1. Use Python 3.11+ where TTS may work with newer transformers")
+                logger.warning("  2. Install transformers 4.35.0 in a separate environment for TTS only")
+                logger.warning("  3. Wait for TTS update that supports newer transformers")
+            else:
+                logger.warning("Common fixes:")
+                logger.warning("  - PyTorch version: pip install torch==2.5.1 torchaudio==2.5.1 torchvision==0.20.1")
+                logger.warning("  - Transformers: pip install transformers==4.35.0")
+                logger.warning("  - HuggingFace Hub: pip install 'huggingface_hub>=0.20.0,<1.0'")
+            
             self.model = None
             # Don't raise - allow app to continue without TTS
     
@@ -87,7 +112,8 @@ class TTSService:
         text: str,
         voice_sample_path: str,
         output_path: Optional[str] = None,
-        language: str = "en"
+        language: str = "en",
+        save_chunks: bool = False
     ) -> str:
         """
         Generate audio from text using a voice sample.
@@ -97,6 +123,7 @@ class TTSService:
             voice_sample_path: Path to the reference voice sample
             output_path: Optional output path for the audio file
             language: Language code (default: "en")
+            save_chunks: If True, keep chunk files instead of deleting them
             
         Returns:
             Path to the generated audio file
@@ -177,14 +204,78 @@ class TTSService:
         final_audio.export(output_path, format="mp3")
         logger.info(f"Audio generated successfully: {output_path}")
         
-        # Clean up chunk files
-        for chunk_file in chunk_files:
-            try:
-                os.remove(chunk_file)
-            except:
-                pass
+        # Clean up chunk files unless save_chunks is True
+        if not save_chunks:
+            for chunk_file in chunk_files:
+                try:
+                    os.remove(chunk_file)
+                except:
+                    pass
         
         return output_path
+    
+    def generate_audio_chunks(
+        self,
+        text: str,
+        voice_sample_path: str,
+        output_dir: Optional[str] = None,
+        language: str = "en"
+    ) -> List[str]:
+        """
+        Generate audio chunks from text and return paths to individual chunk files.
+        
+        Args:
+            text: Text to convert to speech
+            voice_sample_path: Path to the reference voice sample
+            output_dir: Optional output directory for chunk files
+            language: Language code (default: "en")
+            
+        Returns:
+            List of paths to generated audio chunk files
+        """
+        if not self.model:
+            error_msg = (
+                "TTS model not initialized. Check logs for initialization errors. "
+                "This may be due to a transformers library compatibility issue. "
+                "Try: pip install transformers==4.35.0"
+            )
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
+        if not os.path.exists(voice_sample_path):
+            raise FileNotFoundError(f"Voice sample not found: {voice_sample_path}")
+        
+        if output_dir is None:
+            output_dir = "/tmp/tts_chunks"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Chunk the text
+        text_chunks = self._chunk_text(text)
+        logger.info(f"Split text into {len(text_chunks)} chunks")
+        
+        # Generate audio for each chunk
+        chunk_files = []
+        
+        for i, chunk in enumerate(text_chunks):
+            chunk_file = os.path.join(output_dir, f"chunk_{i:03d}.mp3")
+            try:
+                logger.info(f"Generating audio for chunk {i+1}/{len(text_chunks)}")
+                self.model.tts_to_file(
+                    text=chunk,
+                    file_path=chunk_file,
+                    speaker_wav=voice_sample_path,
+                    language=language
+                )
+                chunk_files.append(chunk_file)
+            except Exception as e:
+                logger.error(f"Error generating audio for chunk {i}: {e}")
+                continue
+        
+        if not chunk_files:
+            raise RuntimeError("Failed to generate any audio chunks")
+        
+        logger.info(f"Generated {len(chunk_files)} audio chunks")
+        return chunk_files
     
     def get_voice_sample_path(self, character_id: str) -> Optional[str]:
         """

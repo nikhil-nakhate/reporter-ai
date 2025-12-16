@@ -46,26 +46,11 @@ class LLMService:
             except Exception as e:
                 logger.warning(f"Failed to initialize Anthropic client: {e}")
         
-        # Initialize Qwen adapters if available (lightweight - doesn't load models)
+        # Skip Qwen adapters to save memory for video service
+        # Only use Anthropic API-based models
+        logger.info("ℹ️  Qwen models disabled to save memory for video service. Using Anthropic API only.")
         if QWEN_AVAILABLE and QwenAdapter:
-            for model_id, model_info in AVAILABLE_LLMS.get("qwen", {}).items():
-                try:
-                    qwen_model_id = model_info.get("model_id", "Qwen/Qwen2.5-VL-7B-Instruct")
-                    adapter = QwenAdapter(model_id=qwen_model_id)
-                    # Lightweight availability check (doesn't load model)
-                    if adapter.is_available():
-                        self.qwen_adapters[model_id] = adapter
-                        logger.info(f"✅ Qwen adapter created for {model_id} (model will load on first use)")
-                    else:
-                        logger.warning(f"❌ Qwen adapter for {model_id} not available")
-                except Exception as e:
-                    logger.warning(f"❌ Failed to create Qwen adapter for {model_id}: {e}")
-                    logger.debug(f"Qwen adapter error details: {e}", exc_info=True)
-        else:
-            if not QWEN_AVAILABLE:
-                logger.info("ℹ️  QwenVLM not available - dependencies may be missing")
-            elif not QwenAdapter:
-                logger.info("ℹ️  QwenAdapter not available")
+            logger.info("ℹ️  QwenVLM is available but not initialized to preserve memory")
         
         # OpenAI client can be initialized here when needed
         # For now, we'll initialize it lazily
@@ -82,8 +67,8 @@ class LLMService:
             for model_id, model_info in provider_models.items():
                 # Check availability based on provider
                 if provider == "qwen":
-                    # For Qwen, check if adapter is available
-                    available = model_id in self.qwen_adapters
+                    # Qwen models are disabled to save memory for video service
+                    available = False
                 else:
                     # For API-based models, check if API key is available
                     requires_key = model_info.get("requires_key")
@@ -141,8 +126,7 @@ class LLMService:
             async for chunk in self._stream_openai(model_id, system_prompt, user_prompt, max_tokens):
                 yield chunk
         elif provider == "qwen":
-            async for chunk in self._stream_qwen(model_id, system_prompt, user_prompt, max_tokens):
-                yield chunk
+            yield create_error_response("Qwen models are disabled to save memory for video service. Please use Anthropic models instead.")
         else:
             yield create_error_response(f"Provider '{provider}' not yet implemented")
     
@@ -230,24 +214,6 @@ class LLMService:
         user_prompt: str,
         max_tokens: int
     ) -> AsyncIterator[str]:
-        """Stream generation using Qwen VLM."""
-        if model_id not in self.qwen_adapters:
-            # Try to create adapter on the fly
-            try:
-                model_config = AVAILABLE_LLMS.get("qwen", {}).get(model_id, {})
-                qwen_model_id = model_config.get("model_id", "Qwen/Qwen2.5-VL-7B-Instruct")
-                adapter = QwenAdapter(model_id=qwen_model_id)
-                if adapter.is_available():
-                    self.qwen_adapters[model_id] = adapter
-                else:
-                    yield create_error_response("QwenVLM model not available or failed to load")
-                    return
-            except Exception as e:
-                logger.error(f"Failed to initialize Qwen adapter: {e}")
-                yield create_error_response(f"Failed to load Qwen model: {str(e)}")
-                return
-        
-        adapter = self.qwen_adapters[model_id]
-        async for chunk in adapter.stream_generate(system_prompt, user_prompt, max_tokens):
-            yield chunk
+        """Stream generation using Qwen VLM (disabled to save memory for video service)."""
+        yield create_error_response("Qwen models are disabled to save memory for video service. Please use Anthropic models instead.")
 
